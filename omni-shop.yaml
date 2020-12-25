@@ -1,0 +1,188 @@
+# res git
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: omnishop-github
+spec:
+  type: git
+  params:
+    - name: revision
+      value: release/v0.2.1
+    - name: url
+      value: https://github.com/GoogleCloudPlatform/microservices-demo/
+---
+# res gcr
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: omnishop-gcr-project
+spec:
+  type: image
+  params:
+    - name: url
+      value: gcr.io/jscheng-cfkf-demo/
+---
+# task 
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-omnishop-from-git
+spec:
+  params:
+    - name: pathToContext
+      type: string
+      description: |
+        The build context used by Kaniko
+        (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
+      default: $(resources.inputs.docker-source.path)
+  resources:
+    inputs:
+      - name: docker-source
+        type: git
+    outputs:
+      - name: builtImage
+        type: image
+  steps:
+# step
+    - name: build-and-push-emailservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/emailservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)emailservice
+        - --context=$(params.pathToContext)/src/emailservice
+# step
+    - name: build-and-push-productcatalogservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/productcatalogservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)productcatalogservice
+        - --context=$(params.pathToContext)/src/productcatalogservice
+# step
+    - name: build-and-push-recommendationservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/recommendationservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)recommendationservice
+        - --context=$(params.pathToContext)/src/recommendationservice
+# step
+    - name: build-and-push-shippingservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/shippingservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)shippingservice
+        - --context=$(params.pathToContext)/src/shippingservice
+# step
+    - name: build-and-push-checkoutservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/checkoutservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)checkoutservice
+        - --context=$(params.pathToContext)/src/checkoutservice
+# step
+    - name: build-and-push-paymentservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/paymentservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)paymentservice
+        - --context=$(params.pathToContext)/src/paymentservice
+# step
+    - name: build-and-push-currencyservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/currencyservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)currencyservice
+        - --context=$(params.pathToContext)/src/currencyservice
+# step
+    - name: build-and-push-cartservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/cartservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)cartservice
+        - --context=$(params.pathToContext)/src/cartservice
+# step
+    - name: build-and-push-frontend
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/frontend/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)frontend
+        - --context=$(params.pathToContext)/src/frontend
+# step
+    - name: build-and-push-loadgenerator
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/loadgenerator/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)loadgenerator
+        - --context=$(params.pathToContext)/src/loadgenerator
+# step
+    - name: build-and-push-adservice
+      image: gcr.io/kaniko-project/executor:v0.16.0
+      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/adservice/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)adservice
+        - --context=$(params.pathToContext)/src/adservice
