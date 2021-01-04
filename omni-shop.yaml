@@ -1,4 +1,175 @@
-# res git -- more test
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-omnishop-all
+spec:
+  params:
+    - name: pathToContext
+      type: string
+      description: Path to context
+      default: $(resources.inputs.docker-source.path)
+    - name: versiontag
+      type: string
+      description: the tag of the image
+      default: latest      
+  resources:
+    - name: docker-source
+      type: git
+    - name: builtImage
+      type: image      
+  tasks:
+    - name: build-adservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: adservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-cartservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: cartservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-checkoutservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: checkoutservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-currencyservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: currencyservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-frontend
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: frontend
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-loadgenerator
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: loadgenerator
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-paymentservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: paymentservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-productcatalogservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: productcatalogservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-recommendationservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: recommendationservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+    - name: build-shippingservice
+      taskRef:
+        name: build-omnishop-1app
+      params:
+        - name: appName
+          value: shippingservice
+        - name: versiontag
+          value: $(params.versiontag)
+      resources:
+        inputs:
+          - name: docker-source
+            resource: docker-source
+        outputs:
+          - name: builtImage
+            resource: builtImage
+---
+# res github
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
@@ -22,11 +193,29 @@ spec:
     - name: url
       value: gcr.io/jscheng-cfkf-demo/
 ---
-# task 
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: build-omnishop-all-from-git-run-3
+spec:
+  serviceAccountName: gcr-io-write-sa
+  pipelineRef:
+    name: build-omnishop-all
+  params:
+    - name: versiontag
+      value: a20210104
+  resources:
+    - name: docker-source
+      resourceRef:
+        name: omnishop-github
+    - name: builtImage
+      resourceRef:
+        name: omnishop-gcr-project
+---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: build-omnishop-from-git
+  name: build-omnishop-1app
 spec:
   params:
     - name: pathToContext
@@ -35,6 +224,15 @@ spec:
         The build context used by Kaniko
         (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
       default: $(resources.inputs.docker-source.path)
+    - name: appName
+      type: string
+      description: |
+        The service name in omnishop to be built.
+      default: emailservice
+    - name: versiontag
+      type: string
+      description: the tag of the image
+      default: latest
   resources:
     inputs:
       - name: docker-source
@@ -53,136 +251,99 @@ spec:
       command:
         - /kaniko/executor
       args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/emailservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)emailservice
-        - --context=$(params.pathToContext)/src/emailservice
-# step
-    - name: build-and-push-productcatalogservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/productcatalogservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)productcatalogservice
-        - --context=$(params.pathToContext)/src/productcatalogservice
-# step
-    - name: build-and-push-recommendationservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/recommendationservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)recommendationservice
-        - --context=$(params.pathToContext)/src/recommendationservice
-# step
-    - name: build-and-push-shippingservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/shippingservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)shippingservice
-        - --context=$(params.pathToContext)/src/shippingservice
-# step
-    - name: build-and-push-checkoutservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/checkoutservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)checkoutservice
-        - --context=$(params.pathToContext)/src/checkoutservice
-# step
-    - name: build-and-push-paymentservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/paymentservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)paymentservice
-        - --context=$(params.pathToContext)/src/paymentservice
-# step
-    - name: build-and-push-currencyservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/currencyservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)currencyservice
-        - --context=$(params.pathToContext)/src/currencyservice
-# step
-    - name: build-and-push-cartservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/cartservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)cartservice
-        - --context=$(params.pathToContext)/src/cartservice
-# step
-    - name: build-and-push-frontend
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/frontend/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)frontend
-        - --context=$(params.pathToContext)/src/frontend
-# step
-    - name: build-and-push-loadgenerator
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/loadgenerator/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)loadgenerator
-        - --context=$(params.pathToContext)/src/loadgenerator
-# step
-    - name: build-and-push-adservice
-      image: gcr.io/kaniko-project/executor:v0.16.0
-      # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
-      env:
-        - name: "DOCKER_CONFIG"
-          value: "/tekton/home/.docker/"
-      command:
-        - /kaniko/executor
-      args:
-        - --dockerfile=$(resources.inputs.docker-source.path)/src/adservice/Dockerfile
-        - --destination=$(resources.outputs.builtImage.url)adservice
-        - --context=$(params.pathToContext)/src/adservice
+        - --dockerfile=$(resources.inputs.docker-source.path)/src/$(params.appName)/Dockerfile
+        - --destination=$(resources.outputs.builtImage.url)$(params.appName):$(params.versiontag)
+        - --context=$(params.pathToContext)/src/$(params.appName)
+---
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: github-listener-interceptor
+spec:
+  triggers:
+    - name: github-listener
+      interceptors:
+        - github:
+            secretRef:
+              secretName: github-secret
+              secretKey: secretToken
+            eventTypes:
+              - push
+        - cel:
+            filter: "body.ref in ['refs/heads/master']"
+            overlays:
+              - key: extensions.short_commit
+                expression: "body.after.truncate(7)"
+      bindings:
+        - ref: github-pr-binding
+      template:
+        ref: github-template
+  resources:
+    kubernetesResource:
+      serviceType: NodePort
+      spec:
+        template:
+          spec:
+            serviceAccountName: tekton-triggers-example-sa
+            containers:
+              - resources:
+                  requests:
+                    memory: "64Mi"
+                    cpu: "250m"
+                  limits:
+                    memory: "128Mi"
+                    cpu: "500m"
+
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: github-pr-binding
+spec:
+  params:
+    - name: gitrevision
+      value: $(body.after)
+    - name: gitrepositoryurl
+      value: $(body.repository.clone_url)
+    - name: versiontag
+      value: $(body.extensions.short_commit)
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+spec:
+  params:
+    - name: gitrevision
+    - name: gitrepositoryurl
+    - name: versiontag
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineRun
+      metadata:
+        generateName: github-run-
+      spec:
+        serviceAccountName: gcr-io-write-sa
+        pipelineRef:
+          kind: Pipeline
+          name: build-omnishop-all
+        params:
+          - name: versiontag
+            value: $(tt.params.versiontag)
+        resources:
+          - name: builtImage
+            resourceSpec:
+              params:
+                - name: url
+                  value: gcr.io/jscheng-cfkf-demo/
+              type: image
+          - name: docker-source
+            resourceSpec:
+              type: git
+              params:
+                - name: revision
+                  value: $(tt.params.gitrevision)
+                - name: url
+                  value: $(tt.params.gitrepositoryurl)
+---
